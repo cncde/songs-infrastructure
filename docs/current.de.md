@@ -29,3 +29,19 @@ sofort auch auf das Live-System deployed*.
 
 Datenbankmigrationen gibt es keine. Änderungen am Schema müssen manuell
 durchgeführt werden.
+
+## Datenbank 
+
+Folgende Tabelle ist eine Darstellung aller Felder der Datenbank. Enum soll beschreiben, dass das Feld nur die in dem
+Kommentar beschriebene Werte annehmen kann
+
+| Feldname | Format | Kommentar |
+| --- | --- | --- |
+| name | String | Name des Liedes|
+| audioUrl | Url | URL des/r Audiofiles|
+| description | String | Ein Kommentar für ein Lied. Ist in der GUI noch nicht umgesetzt, aber ein Wunsch |
+| imageUrl | Url | URL des Imagefiles (Aus der Liedermappe)|
+| etappe | Enum(String) | Vorkatechumenat/Katechumenat/Auserwählung/liturgisch|
+| liedtext | String | komplett Text des Liedes als String für die Volltextsuche|
+| liturgischString | Enum(String) | Advent-Weihnachten/Fastenzeit/Ostern-Pfingsten/Jahreskreis|
+| thematischString | Enum(String) |Marienlieder/Lieder-für-die-Kinder/ Einzugslieder/|Frieden-Gabenbereitung/Brotbrechen/Kelchkommunion/Auszugslieder|
