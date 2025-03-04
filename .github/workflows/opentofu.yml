@@ -1,0 +1,66 @@
+name: Apply OpenTofu
+on:
+  pull_request:
+    paths:
+    - ".github/workflows/opentofu.yml"
+    - "opentofu/**"
+  push:
+    paths:
+    - ".github/workflows/opentofu.yml"
+    - "opentofu/**"
+    branches:
+      - main
+
+# cancel old jobs on all branches except main
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: ${{ github.ref_name != 'main' }}
+
+jobs:
+  apply-opentofu:
+    runs-on: ubuntu-latest
+    # required for step: Configure AWS credentials and
+    # https://github.com/aws-actions/configure-aws-credentials?tab=readme-ov-file#oidc
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - environment: dev
+            role: GHA-songs-infrastructure-opentofu
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.9.0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::851725187043:role/${{ matrix.env.role }}
+          aws-region: eu-central-1
+
+      - name: OpenTofu fmt
+        if: ${{ github.ref_name != 'main' }}
+        run: |
+          cd opentofu
+          tofu fmt -recursive -check -diff
+
+      - name: OpenTofu plan
+        run: |
+          cd opentofu/environments/${{ matrix.env.environment }}/infrastructure
+          tofu init
+          tofu plan -out=tfplan
+
+      - name: OpenTofu apply
+        if: ${{ github.ref_name == 'main' }}
+        run: |
+          cd opentofu/environments/${{ matrix.env.environment }}/infrastructure
+          tofu apply -auto-approve tfplan
