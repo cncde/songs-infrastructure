@@ -1,0 +1,62 @@
+name: CI workflow
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/ci.yaml"
+      - ".github/trivy/**"
+      - "opentofu/**"
+      - ".trivyignore"
+  push:
+    paths:
+      - ".github/workflows/ci.yaml"
+      - ".github/trivy/**"
+      - "opentofu/**"
+      - ".trivyignore"
+    branches:
+      - main
+
+# cancel old jobs on all branches except main
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: ${{ github.ref_name != 'main' }}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.9.0
+
+      - name: Initialize OpenTofu
+        run: tofu init
+
+      - name: Validate OpenTofu code
+        run: tofu validate
+
+  trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          trivy-config: .github/trivy/config.yml
+
+      - name: Upload Trivy scan results to GitHub Security
+        if: ${{ success() || failure() }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
