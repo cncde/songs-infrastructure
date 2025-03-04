@@ -1,0 +1,15 @@
+exit-code: 1
+scan:
+  scanners:
+    - secret
+    - misconfig
+misconfiguration:
+  scanners:
+    - terraform
+output: trivy-results.sarif
+format: sarif
+severity:
+  - UNKNOWN
+  - MEDIUM
+  - HIGH
+  - CRITICAL
