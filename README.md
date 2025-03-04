@@ -4,6 +4,11 @@ This repository contains the definitions to manage the infrastructure of the son
 GitHub actions and a PullRequest workflow. The OpenTofu state is stored in an S3 bucket, which is manually created and
 later imported to be managed alongside other resources.
 
+## Workflow
+
+Any change must be made via a pull request. Commits to the `main` branch are not allowed. This is to ensure that all
+checks have been successful, and that someone has reviewed the changes before they are actually applied.
+
 ## OpenTofu Structure
 
 All the OpenTofu files are located in the `opentofu` folder. The setup is split into modules and environments, that
@@ -16,13 +21,15 @@ information but can be configured via variables. The following modules exist:
 - `state` contains basic resources to manage the OpenTofu state
 
 The `environments` folder contains the stage specific configuration files for the modules (e.g. information about the
-vpc, subnets, etc.). The modules are included in the respective `main.tf`.
+VPC, Subnets, etc.). The modules are included in the respective `main.tf`.
 
 ## Initial setup
 
-Two things are necessary to enable automation: the state of OpenTofu needs to be stored centrally. This is done using an
-S3 bucket as a backend. The second part is to create an IAM role that the GitHub action can assume to manage the
-resources.
+A few things are necessary to enable automation:
+
+1. The state of OpenTofu needs to be stored centrally. This is done using an S3 bucket as a backend.
+2. GH actions need to be able to authenticate against the AWS system. This is done using GitHub's OpenID Connect IdP.
+3. An IAM role is required so that the GitHub action can assume it to manage the resources.
 
 ### OpenTofu state bucket
 
@@ -49,6 +56,10 @@ For the initial setup of the state S3 bucket follow these steps:
 7. Then run the `import.sh` script in the `environments` folder to import the initial resources into the state bucket
    and enable automated management through the workflows.
 8. Remove the `.terraform.lock.hcl` file.
+
+### Authentication
+
+Authentication to AWS is based on OpenID Connect as shown in [Configuring OpenID Connect in Amazon Web Services](https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services).
 
 ### Github Actions Permissions
 
