@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "tf_state" {
-  bucket = "songs-tf-state-${var.environment}"
+  bucket = "songs-opentofu-state-${var.environment}"
   tags = {
     Service = "songs"
   }
