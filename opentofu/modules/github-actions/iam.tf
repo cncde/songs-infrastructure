@@ -95,6 +95,39 @@ resource "aws_iam_role_policy_attachment" "infrastructure_state_bucket_name_role
   policy_arn = aws_iam_policy.infrastructure_state_bucket_name.arn
 }
 
+# DynamoDB
+resource "aws_iam_policy" "infrastructure_opentofu_dynamodb" {
+  name        = "GHA-songs-infrastructure-opentofu-dynamodb"
+  description = "Policy to allow GitHub Actions to manage DynamoDB tables"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "dynamodb:CreateTable",
+          "dynamodb:DescribeTable",
+          "dynamodb:UpdateTable",
+          "dynamodb:DeleteTable",
+          "dynamodb:ListTables",
+          "dynamodb:TagResource",
+          "dynamodb:UntagResource",
+          "dynamodb:ListTagsOfResource",
+          "dynamodb:DescribeContinuousBackups",
+          "dynamodb:DescribeTimeToLive"
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "infrastructure_opentofu_dynamodb_role_policy_attachment" {
+  role       = aws_iam_role.infrastructure_opentofu.name
+  policy_arn = aws_iam_policy.infrastructure_opentofu_dynamodb.arn
+}
+
 # # API AppRunner
 # resource "aws_iam_policy" "infrastructure_opentofu_api" {
 #   name        = "GHA_songs-infrastructure-opentofu-api"

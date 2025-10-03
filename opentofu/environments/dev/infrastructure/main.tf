@@ -22,3 +22,8 @@ module "state" {
   source      = "../../../modules/state"
   environment = "dev"
 }
+
+module "database" {
+  source      = "../../../modules/database"
+  environment = "dev"
+}

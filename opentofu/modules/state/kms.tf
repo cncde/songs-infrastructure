@@ -13,7 +13,7 @@ resource "aws_kms_key" "tf_state" {
 }
 
 resource "aws_kms_alias" "tf_state_alias" {
-  name          = "alias/songs-tf-state-${var.environment}"
+  name          = "alias/songs-opentofu-state-${var.environment}"
   target_key_id = aws_kms_key.tf_state.key_id
 
 }
