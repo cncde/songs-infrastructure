@@ -21,28 +21,27 @@ if [[ "$ENVIRONMENT" != "dev" && "$ENVIRONMENT" != "test" && "$ENVIRONMENT" != "
 fi
 
 PREFIX="echo "
-if [ -z "$1" ]; then
-  echo "No action parameter provided. Running in safe mode. Use --force to actually import the resources."
-fi
-
-if [ "$1" == "--apply" ]; then
+if [ -z "${1:-}" ]; then
+  echo "No action parameter provided. Running in safe mode. Use --apply to actually import the resources."
+elif [ "${1}" == "--apply" ]; then
   PREFIX=""
 fi
 
-STATE_KEY=$(aws kms list-aliases --query "Aliases[?AliasName=='alias/songs-tf-state-${ENVIRONMENT}'].TargetKeyId" --output text)
+STATE_KEY=$(aws kms list-aliases --query "Aliases[?AliasName=='alias/songs-opentofu-state-${ENVIRONMENT}'].TargetKeyId" --output text)
 
 
 if [ -z "${STATE_KEY}" ] || [[ "${STATE_KEY}" =~ \  ]]; then
   echo "Error: STATE_KEY is empty or contains spaces"
+  echo "Looking for alias: alias/songs-opentofu-state-${ENVIRONMENT}"
   exit 1
 fi
 
 # KMS
 $PREFIX tofu import module.state.aws_kms_key.tf_state "$STATE_KEY"
-$PREFIX tofu import module.state.aws_kms_alias.tf_state_alias "alias/songs-tf-state-${ENVIRONMENT}"
+$PREFIX tofu import module.state.aws_kms_alias.tf_state_alias "alias/songs-opentofu-state-${ENVIRONMENT}"
 # S3
-$PREFIX tofu import module.state.aws_s3_bucket.tf_state "songs-tf-state-${ENVIRONMENT}"
-$PREFIX tofu import module.state.aws_s3_bucket_public_access_block.tf_state "songs-tf-state-${ENVIRONMENT}"
-$PREFIX tofu import module.state.aws_s3_bucket_versioning.tf_state "songs-tf-state-${ENVIRONMENT}"
-$PREFIX tofu import module.state.aws_s3_bucket_server_side_encryption_configuration.tf_state "songs-tf-state-${ENVIRONMENT}"
-$PREFIX tofu import module.state.aws_s3_bucket_policy.tf_state "songs-tf-state-${ENVIRONMENT}"
+$PREFIX tofu import module.state.aws_s3_bucket.tf_state "songs-opentofu-state-${ENVIRONMENT}"
+$PREFIX tofu import module.state.aws_s3_bucket_public_access_block.tf_state "songs-opentofu-state-${ENVIRONMENT}"
+$PREFIX tofu import module.state.aws_s3_bucket_versioning.tf_state "songs-opentofu-state-${ENVIRONMENT}"
+$PREFIX tofu import module.state.aws_s3_bucket_server_side_encryption_configuration.tf_state "songs-opentofu-state-${ENVIRONMENT}"
+$PREFIX tofu import module.state.aws_s3_bucket_policy.tf_state "songs-opentofu-state-${ENVIRONMENT}"
