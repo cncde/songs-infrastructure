@@ -51,7 +51,8 @@ resource "aws_iam_policy" "infrastructure_state_bucket_name" {
           "s3:GetReplicationConfiguration",
           "s3:GetEncryptionConfiguration",
           "s3:GetBucketObjectLockConfiguration",
-          "s3:GetBucketTagging"
+          "s3:GetBucketTagging",
+          "s3:GetBucketPublicAccessBlock"
         ],
         Resource = [
           "arn:aws:s3:::${var.state_bucket_name}"

@@ -27,3 +27,10 @@ module "database" {
   source      = "../../../modules/database"
   environment = "dev"
 }
+
+module "api" {
+  source           = "../../../modules/api"
+  environment      = "dev"
+  songs_table_name = module.database.songs_table_name
+  image_tag        = "latest"
+}
