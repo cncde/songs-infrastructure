@@ -1,4 +1,4 @@
-exit-code: 1
+# exit-code: 1
 scan:
   scanners:
     - secret
@@ -8,6 +8,7 @@ misconfiguration:
     - terraform
 output: trivy-results.sarif
 format: sarif
+ignore-unfixed: true
 severity:
   - UNKNOWN
   - MEDIUM

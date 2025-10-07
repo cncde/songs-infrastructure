@@ -54,6 +54,7 @@ jobs:
           scan-type: 'fs'
           scan-ref: '.'
           trivy-config: .github/trivy/config.yml
+          version: v0.67.0
 
       - name: Upload Trivy scan results to GitHub Security
         if: ${{ success() || failure() }}
