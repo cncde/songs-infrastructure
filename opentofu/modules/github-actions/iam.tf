@@ -128,38 +128,82 @@ resource "aws_iam_role_policy_attachment" "infrastructure_opentofu_dynamodb_role
   policy_arn = aws_iam_policy.infrastructure_opentofu_dynamodb.arn
 }
 
-# # API AppRunner
-# resource "aws_iam_policy" "infrastructure_opentofu_api" {
-#   name        = "GHA_songs-infrastructure-opentofu-api"
-#   description = "Policy to allow GitHub Actions to manage the API AppRunner service"
+# Lambda and ECR for API
+resource "aws_iam_policy" "infrastructure_opentofu_api" {
+  name        = "GHA-songs-infrastructure-opentofu-api"
+  description = "Policy to allow GitHub Actions to manage Lambda and ECR for API"
 
-#   policy = jsonencode({
-#     Version = "2012-10-17",
-#     Statement = [
-#       {
-#         Effect = "Allow",
-#         Action = [
-#           "apprunner:CreateService",
-#           "apprunner:DescribeService",
-#           "apprunner:UpdateService",
-#           "apprunner:DeleteService",
-#           "apprunner:ListServices",
-#           "apprunner:PauseService",
-#           "apprunner:ResumeService",
-#           "apprunner:ListOperations",
-#           "apprunner:DescribeOperation",
-#           "apprunner:StartDeployment",
-#           "apprunner:ListTagsForResource",
-#           "apprunner:TagResource",
-#           "apprunner:UntagResource"
-#         ],
-#         Resource = "songs-backend"
-#       }
-#     ]
-#   })
-# }
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "lambda:CreateFunction",
+          "lambda:UpdateFunctionCode",
+          "lambda:UpdateFunctionConfiguration",
+          "lambda:GetFunction",
+          "lambda:GetFunctionConfiguration",
+          "lambda:DeleteFunction",
+          "lambda:ListFunctions",
+          "lambda:TagResource",
+          "lambda:UntagResource",
+          "lambda:ListTags",
+          "lambda:CreateFunctionUrlConfig",
+          "lambda:UpdateFunctionUrlConfig",
+          "lambda:GetFunctionUrlConfig",
+          "lambda:DeleteFunctionUrlConfig"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "ecr:CreateRepository",
+          "ecr:DescribeRepositories",
+          "ecr:DeleteRepository",
+          "ecr:PutLifecyclePolicy",
+          "ecr:GetLifecyclePolicy",
+          "ecr:DeleteLifecyclePolicy",
+          "ecr:PutImageScanningConfiguration",
+          "ecr:GetImageScanningConfiguration",
+          "ecr:TagResource",
+          "ecr:UntagResource",
+          "ecr:ListTagsForResource"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "iam:CreateRole",
+          "iam:GetRole",
+          "iam:DeleteRole",
+          "iam:AttachRolePolicy",
+          "iam:DetachRolePolicy",
+          "iam:PutRolePolicy",
+          "iam:DeleteRolePolicy",
+          "iam:GetRolePolicy",
+          "iam:ListRolePolicies",
+          "iam:ListAttachedRolePolicies",
+          "iam:CreatePolicy",
+          "iam:GetPolicy",
+          "iam:DeletePolicy",
+          "iam:GetPolicyVersion",
+          "iam:ListPolicyVersions",
+          "iam:TagRole",
+          "iam:UntagRole",
+          "iam:TagPolicy",
+          "iam:UntagPolicy",
+          "iam:PassRole"
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
 
-# resource "aws_iam_role_policy_attachment" "infrastructure_opentofu_api_role_policy_attachment" {
-#   role       = aws_iam_role.infrastructure_opentofu.name
-#   policy_arn = aws_iam_policy.infrastructure_opentofu_api.arn
-# }
+resource "aws_iam_role_policy_attachment" "infrastructure_opentofu_api_role_policy_attachment" {
+  role       = aws_iam_role.infrastructure_opentofu.name
+  policy_arn = aws_iam_policy.infrastructure_opentofu_api.arn
+}
