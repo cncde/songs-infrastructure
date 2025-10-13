@@ -63,3 +63,33 @@ resource "aws_iam_role_policy_attachment" "lambda_dynamodb" {
   role       = aws_iam_role.lambda_execution.name
   policy_arn = aws_iam_policy.lambda_dynamodb.arn
 }
+
+resource "aws_iam_policy" "lambda_ecr" {
+  name        = "${var.prefix}songs-api-lambda-ecr-${var.environment}"
+  description = "Policy for Lambda to pull images from ECR"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = {
+    Environment = var.environment
+    Project     = "Songs Infrastructure"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_ecr" {
+  role       = aws_iam_role.lambda_execution.name
+  policy_arn = aws_iam_policy.lambda_ecr.arn
+}
