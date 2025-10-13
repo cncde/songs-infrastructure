@@ -79,6 +79,13 @@ resource "aws_iam_policy" "lambda_ecr" {
           "ecr:BatchCheckLayerAvailability"
         ]
         Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken"
+        ]
+        Resource = "*"
       }
     ]
   })
