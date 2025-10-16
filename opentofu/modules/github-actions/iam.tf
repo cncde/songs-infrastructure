@@ -191,7 +191,8 @@ resource "aws_iam_policy" "infrastructure_opentofu_api" {
           "iam:GetPolicy",
           "iam:DeletePolicy",
           "iam:GetPolicyVersion",
-          "iam:ListPolicyVersions",
+          "iam:ListPolicyVersions"
+          "iam:CreatePolicyVersion",
           "iam:TagRole",
           "iam:UntagRole",
           "iam:TagPolicy",
