@@ -32,3 +32,42 @@ resource "aws_ecr_lifecycle_policy" "api" {
     ]
   })
 }
+
+resource "aws_ecr_repository_policy" "api" {
+  repository = aws_ecr_repository.api.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowLambdaPull"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.lambda_execution.arn
+        }
+        Action = [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability"
+        ]
+      },
+      {
+        Sid    = "AllowLambdaServicePull"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+        Action = [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability"
+        ]
+        Condition = {
+          StringLike = {
+            "aws:sourceArn" = "arn:aws:lambda:*:*:function:${var.prefix}songs-api-${var.environment}"
+          }
+        }
+      }
+    ]
+  })
+}
