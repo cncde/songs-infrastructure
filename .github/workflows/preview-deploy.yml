@@ -24,17 +24,81 @@ jobs:
               content: 'rocket',
             });
 
-      - name: Determine preview workspace
-        id: workspace
+      - name: Resolve preview target
+        id: resolve
+        env:
+          COMMENT: ${{ github.event.comment.body }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          backend_pr=""
+          frontend_pr=""
+
+          if [[ "$COMMENT" =~ --backend[[:space:]]+([0-9]+) ]]; then
+            backend_pr="${BASH_REMATCH[1]}"
+          fi
+
+          if [[ "$COMMENT" =~ --frontend[[:space:]]+([0-9]+) ]]; then
+            frontend_pr="${BASH_REMATCH[1]}"
+          fi
+
+          workspace="preview-pr-${PR_NUMBER}"
+          if [ -n "$backend_pr" ]; then
+            workspace="${workspace}-backend-${backend_pr}"
+          fi
+          if [ -n "$frontend_pr" ]; then
+            workspace="${workspace}-frontend-${frontend_pr}"
+          fi
+
+          echo "backend_pr=${backend_pr}" >> "$GITHUB_OUTPUT"
+          echo "frontend_pr=${frontend_pr}" >> "$GITHUB_OUTPUT"
+          echo "workspace=${workspace}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve PR refs
+        id: refs
         env:
           PR_NUMBER: ${{ github.event.issue.number }}
+          BACKEND_PR: ${{ steps.resolve.outputs.backend_pr }}
+          FRONTEND_PR: ${{ steps.resolve.outputs.frontend_pr }}
         run: |
-          workspace="preview-pr-${PR_NUMBER}"
-          echo "workspace=${workspace}" >> "$GITHUB_OUTPUT"
-          echo "image_tag=preview-pr-${PR_NUMBER}-$(echo "${GITHUB_SHA}" | cut -c1-8)" >> "$GITHUB_OUTPUT"
+          current_ref=$(gh pr view "$PR_NUMBER" --repo "${GITHUB_REPOSITORY}" --json headRefName --jq '.headRefName')
+          echo "current_ref=${current_ref}" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$BACKEND_PR" ]; then
+            backend_ref=$(gh pr view "$BACKEND_PR" --repo "cncde/songs-backend" --json headRefName --jq '.headRefName')
+            echo "backend_ref=${backend_ref}" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ -n "$FRONTEND_PR" ]; then
+            frontend_ref=$(gh pr view "$FRONTEND_PR" --repo "cncde/songs-frontend" --json headRefName --jq '.headRefName')
+            echo "frontend_ref=${frontend_ref}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Checkout infrastructure code
         uses: actions/checkout@v4
+
+      - name: Checkout current app code
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ steps.refs.outputs.current_ref }}
+          path: current-app
+
+      - name: Checkout linked backend code
+        if: ${{ steps.resolve.outputs.backend_pr != '' }}
+        uses: actions/checkout@v4
+        with:
+          repository: cncde/songs-backend
+          ref: ${{ steps.refs.outputs.backend_ref }}
+          path: linked-backend
+
+      - name: Checkout linked frontend code
+        if: ${{ steps.resolve.outputs.frontend_pr != '' }}
+        uses: actions/checkout@v4
+        with:
+          repository: cncde/songs-frontend
+          ref: ${{ steps.refs.outputs.frontend_ref }}
+          path: linked-frontend
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -51,12 +115,35 @@ jobs:
         with:
           tofu_version: 1.9.0
 
+      - name: Build backend preview image
+        if: ${{ github.repository == 'cncde/songs-backend' || steps.resolve.outputs.backend_pr != '' }}
+        id: backend_build
+        run: |
+          repo_dir="${{ github.repository == 'cncde/songs-backend' && 'current-app' || 'linked-backend' }}"
+          cd "$repo_dir"
+          image_tag="preview-pr-${{ github.event.issue.number }}-$(git rev-parse --short HEAD)"
+          aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 851725187043.dkr.ecr.eu-central-1.amazonaws.com
+          docker build -t songs-api:"$image_tag" .
+          docker tag songs-api:"$image_tag" 851725187043.dkr.ecr.eu-central-1.amazonaws.com/songs-api:"$image_tag"
+          docker push 851725187043.dkr.ecr.eu-central-1.amazonaws.com/songs-api:"$image_tag"
+          echo "image_tag=${image_tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Build frontend preview bundle
+        if: ${{ github.repository == 'cncde/songs-frontend' || steps.resolve.outputs.frontend_pr != '' }}
+        id: frontend_build
+        run: |
+          repo_dir="${{ github.repository == 'cncde/songs-frontend' && 'current-app' || 'linked-frontend' }}"
+          cd "$repo_dir"
+          npm ci
+          BACKEND_URL="" npm run build
+          echo "dist_dir=$(pwd)/build" >> "$GITHUB_OUTPUT"
+
       - name: Apply preview infrastructure
         working-directory: opentofu/environments/preview/infrastructure
         run: |
           tofu init
-          tofu workspace select "${{ steps.workspace.outputs.workspace }}" || tofu workspace new "${{ steps.workspace.outputs.workspace }}"
-          tofu plan -var="image_tag=${{ steps.workspace.outputs.image_tag }}" -out=tfplan
+          tofu workspace select "${{ steps.resolve.outputs.workspace }}" || tofu workspace new "${{ steps.resolve.outputs.workspace }}"
+          tofu plan -var="image_tag=${{ steps.backend_build.outputs.image_tag || 'latest' }}" -out=tfplan
           tofu apply -auto-approve tfplan
 
       - name: Read preview outputs
@@ -65,6 +152,13 @@ jobs:
         run: |
           echo "frontend_url=$(tofu output -raw frontend_url)" >> "$GITHUB_OUTPUT"
           echo "backend_url=$(tofu output -raw backend_url)" >> "$GITHUB_OUTPUT"
+          echo "frontend_bucket=$(tofu output -raw frontend_bucket)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload frontend preview to S3
+        if: ${{ github.repository == 'cncde/songs-frontend' || steps.resolve.outputs.frontend_pr != '' }}
+        run: |
+          repo_dir="${{ github.repository == 'cncde/songs-frontend' && 'current-app' || 'linked-frontend' }}"
+          aws s3 sync "$repo_dir/build/" "s3://${{ steps.outputs.outputs.frontend_bucket }}/" --delete
 
       - name: Comment preview link
         uses: actions/github-script@v7
@@ -78,6 +172,7 @@ jobs:
               '',
               `Workspace: \`${process.env.WORKSPACE}\``,
               '',
+              'Linked preview: this is the deployed combination for the current PR and any linked PRs passed in the comment.',
               'Use `/destroy` to tear down when done.'
             ].join('\n');
 
@@ -90,4 +185,4 @@ jobs:
         env:
           FRONTEND_URL: ${{ steps.outputs.outputs.frontend_url }}
           BACKEND_URL: ${{ steps.outputs.outputs.backend_url }}
-          WORKSPACE: ${{ steps.workspace.outputs.workspace }}
+          WORKSPACE: ${{ steps.resolve.outputs.workspace }}

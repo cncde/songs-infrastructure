@@ -16,9 +16,28 @@ jobs:
       - name: Determine preview workspace
         id: workspace
         env:
+          COMMENT: ${{ github.event.comment.body }}
           PR_NUMBER: ${{ github.event.issue.number }}
         run: |
+          backend_pr=""
+          frontend_pr=""
+
+          if [[ "$COMMENT" =~ --backend[[:space:]]+([0-9]+) ]]; then
+            backend_pr="${BASH_REMATCH[1]}"
+          fi
+
+          if [[ "$COMMENT" =~ --frontend[[:space:]]+([0-9]+) ]]; then
+            frontend_pr="${BASH_REMATCH[1]}"
+          fi
+
           workspace="preview-pr-${PR_NUMBER}"
+          if [ -n "$backend_pr" ]; then
+            workspace="${workspace}-backend-${backend_pr}"
+          fi
+          if [ -n "$frontend_pr" ]; then
+            workspace="${workspace}-frontend-${frontend_pr}"
+          fi
+
           echo "workspace=${workspace}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout infrastructure code
