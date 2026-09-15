@@ -43,9 +43,11 @@ jobs:
                 'You can deploy a temporary preview environment for this PR:',
                 '',
                 '- `/preview` - Deploy preview infrastructure (~3-5 min)',
+                '- `/preview --backend 78` - Deploy this PR together with the linked backend PR #78',
+                '- `/preview --frontend 45` - Deploy this PR together with the linked frontend PR #45',
                 '- `/destroy` - Tear down the preview when you are done',
                 '- `/preview-status` - Check whether the preview is active',
                 '',
-                '**Note:** Preview resources are intentionally lightweight and can be cleaned up manually when no longer needed.'
+                '**Note:** This is the lightweight single-developer flow: one preview per PR combination, ready for someone else to review the actual deployed versions.'
               ].join('\n')
             });
