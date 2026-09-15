@@ -1,0 +1,51 @@
+name: Preview Guide
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  post-guide:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Check for existing preview guide comment
+        id: existing
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+
+            const found = comments.data.some((comment) =>
+              comment.body && comment.body.includes('Preview Environment Available')
+            );
+
+            core.setOutput('has_comment', found ? 'true' : 'false');
+
+      - name: Add preview guide comment
+        if: ${{ steps.existing.outputs.has_comment != 'true' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: [
+                '🚀 **Preview Environment Available**',
+                '',
+                'You can deploy a temporary preview environment for this PR:',
+                '',
+                '- `/preview` - Deploy preview infrastructure (~3-5 min)',
+                '- `/destroy` - Tear down the preview when you are done',
+                '- `/preview-status` - Check whether the preview is active',
+                '',
+                '**Note:** Preview resources are intentionally lightweight and can be cleaned up manually when no longer needed.'
+              ].join('\n')
+            });

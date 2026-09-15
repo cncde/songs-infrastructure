@@ -1,0 +1,56 @@
+name: Preview Destroy
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  destroy-preview:
+    if: ${{ github.event.issue.pull_request != null && contains(github.event.comment.body, '/destroy') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    steps:
+      - name: Determine preview workspace
+        id: workspace
+        env:
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          workspace="preview-pr-${PR_NUMBER}"
+          echo "workspace=${workspace}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout infrastructure code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::851725187043:role/GHA-songs-infrastructure-opentofu
+          aws-region: eu-central-1
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.9.0
+
+      - name: Destroy preview infrastructure
+        working-directory: opentofu/environments/preview/infrastructure
+        run: |
+          tofu init
+          tofu workspace select "${{ steps.workspace.outputs.workspace }}" || exit 0
+          tofu destroy -auto-approve
+          tofu workspace select default
+          tofu workspace delete "${{ steps.workspace.outputs.workspace }}" || true
+
+      - name: Comment teardown result
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '✅ **Preview destroyed successfully!**\n\nAll preview resources and the Terraform workspace have been removed.'
+            });
