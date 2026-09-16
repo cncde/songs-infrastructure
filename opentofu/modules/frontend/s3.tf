@@ -1,5 +1,6 @@
 #trivy:ignore:AVD-AWS-0132 Static website assets are public and rebuilt from source, so a customer-managed KMS key adds cost without protecting confidential data.
 #trivy:ignore:AVD-AWS-0090 Preview website assets are disposable build output; source control and CI rebuilds are the recovery path.
+#trivy:ignore:AVD-AWS-0320 Bucket names are built from a DNS-compatible deployment prefix and a fixed DNS-compatible domain name.
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket = "${var.prefix}lieder.neokatechumenalerweg.de"
 
