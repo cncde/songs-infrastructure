@@ -48,6 +48,6 @@ jobs:
                 '- `/destroy` - Tear down the preview when you are done',
                 '- `/preview-status` - Check whether the preview is active',
                 '',
-                '**Note:** This is the lightweight single-developer flow: one preview per PR combination, ready for someone else to review the actual deployed versions.'
+                '**Note:** This preview flow keeps one active preview per PR combination and is intended for validating the currently deployed frontend/backend versions.'
               ].join('\n')
             });
