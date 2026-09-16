@@ -6,7 +6,7 @@ on:
 
 jobs:
   status-preview:
-    if: ${{ github.event.issue.pull_request != null && contains(github.event.comment.body, '/preview-status') }}
+    if: ${{ github.event.issue.pull_request != null && (github.event.comment.body == '/preview-status' || startsWith(github.event.comment.body, '/preview-status ')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -46,6 +46,7 @@ jobs:
       - name: Resolve PR ref
         id: refs
         env:
+          GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.issue.number }}
         run: |
           current_ref=$(gh pr view "$PR_NUMBER" --repo "${GITHUB_REPOSITORY}" --json headRefName --jq '.headRefName')
