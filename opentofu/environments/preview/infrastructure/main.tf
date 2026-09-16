@@ -50,6 +50,11 @@ output "frontend_url" {
   value       = "https://${module.frontend.frontend_bucket}.s3-website.eu-central-1.amazonaws.com"
 }
 
+output "frontend_bucket" {
+  description = "Preview frontend S3 bucket name"
+  value       = module.frontend.frontend_bucket
+}
+
 output "backend_url" {
   description = "Preview backend Lambda URL"
   value       = module.api.lambda_function_url
