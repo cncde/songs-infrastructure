@@ -1,0 +1,79 @@
+name: Preview Cleanup
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  cleanup-stale-previews:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout infrastructure code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::851725187043:role/GHA-songs-infrastructure-opentofu
+          aws-region: eu-central-1
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.9.0
+
+      - name: Destroy stale preview workspaces
+        working-directory: opentofu/environments/preview/infrastructure
+        run: |
+          tofu init
+
+          now_epoch=$(date +%s)
+          workspaces=$(tofu workspace list | tr -d '*' | grep '^preview-pr-' || true)
+
+          if [ -z "$workspaces" ]; then
+            echo "No preview workspaces found."
+            exit 0
+          fi
+
+          while IFS= read -r workspace; do
+            [ -z "$workspace" ] && continue
+            [ "$workspace" = "default" ] && continue
+
+            object_key="env:/${workspace}/preview-infrastructure.tfstate"
+            last_modified=$(aws s3api head-object --bucket songs-opentofu-state-preview --key "$object_key" --query 'LastModified' --output text 2>/dev/null || true)
+
+            if [ -z "$last_modified" ]; then
+              echo "No state file found for ${workspace}; skipping."
+              continue
+            fi
+
+            last_epoch=$(date -d "$last_modified" +%s 2>/dev/null || true)
+            if [ -z "$last_epoch" ]; then
+              echo "Could not parse timestamp for ${workspace}; skipping."
+              continue
+            fi
+
+            age_days=$(((now_epoch - last_epoch) / 86400))
+            echo "Workspace ${workspace} is ${age_days} days old."
+
+            if [ "$age_days" -lt 7 ]; then
+              continue
+            fi
+
+            if ! tofu workspace select "$workspace" >/dev/null 2>&1; then
+              echo "Workspace ${workspace} is not available locally; cleaning up stale state metadata only."
+              tofu workspace select default
+              tofu workspace delete "$workspace" || true
+              continue
+            fi
+
+            echo "Destroying stale preview ${workspace}"
+            tofu destroy -auto-approve || true
+            tofu workspace select default
+            tofu workspace delete "$workspace" || true
+          done <<< "$workspaces"
