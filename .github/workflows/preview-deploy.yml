@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy-preview:
-    if: ${{ github.event.issue.pull_request != null && contains(github.event.comment.body, '/preview') }}
+    if: ${{ github.event.issue.pull_request != null && (github.event.comment.body == '/preview' || startsWith(github.event.comment.body, '/preview ')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -57,6 +57,7 @@ jobs:
       - name: Resolve PR refs
         id: refs
         env:
+          GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.issue.number }}
           BACKEND_PR: ${{ steps.resolve.outputs.backend_pr }}
           FRONTEND_PR: ${{ steps.resolve.outputs.frontend_pr }}
