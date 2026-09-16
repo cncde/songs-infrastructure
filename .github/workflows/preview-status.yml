@@ -43,6 +43,21 @@ jobs:
       - name: Checkout infrastructure code
         uses: actions/checkout@v4
 
+      - name: Resolve PR ref
+        id: refs
+        env:
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          current_ref=$(gh pr view "$PR_NUMBER" --repo "${GITHUB_REPOSITORY}" --json headRefName --jq '.headRefName')
+          echo "current_ref=${current_ref}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ steps.refs.outputs.current_ref }}
+          path: infrastructure-pr
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -56,7 +71,7 @@ jobs:
 
       - name: Check preview state
         id: check
-        working-directory: opentofu/environments/preview/infrastructure
+        working-directory: infrastructure-pr/opentofu/environments/preview/infrastructure
         run: |
           tofu init
 
