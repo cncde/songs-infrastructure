@@ -107,10 +107,6 @@ jobs:
           role-to-assume: arn:aws:iam::851725187043:role/GHA-songs-infrastructure-opentofu
           aws-region: eu-central-1
 
-      - name: Prepare preview state bucket
-        run: |
-          aws s3api head-bucket --bucket songs-opentofu-state-preview --region eu-central-1 2>/dev/null || aws s3 mb s3://songs-opentofu-state-preview --region eu-central-1
-
       - name: Set up OpenTofu
         uses: opentofu/setup-opentofu@v1
         with:
