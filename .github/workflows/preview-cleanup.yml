@@ -45,7 +45,7 @@ jobs:
             [ "$workspace" = "default" ] && continue
 
             object_key="env:/${workspace}/preview-infrastructure.tfstate"
-            last_modified=$(aws s3api head-object --bucket songs-opentofu-state-preview --key "$object_key" --query 'LastModified' --output text 2>/dev/null || true)
+            last_modified=$(aws s3api head-object --bucket songs-opentofu-state-dev --key "$object_key" --query 'LastModified' --output text 2>/dev/null || true)
 
             if [ -z "$last_modified" ]; then
               echo "No state file found for ${workspace}; skipping."

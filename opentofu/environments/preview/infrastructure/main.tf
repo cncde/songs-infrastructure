@@ -7,7 +7,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "songs-opentofu-state-preview"
+    bucket = "songs-opentofu-state-dev"
     key    = "preview-infrastructure.tfstate"
     region = "eu-central-1"
   }
