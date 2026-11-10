@@ -45,3 +45,30 @@ Kommentar beschriebene Werte annehmen kann
 | liedtext | String | komplett Text des Liedes als String für die Volltextsuche|
 | liturgischString | Enum(String) | Advent-Weihnachten/Fastenzeit/Ostern-Pfingsten/Jahreskreis|
 | thematischString | Enum(String) |Marienlieder/Lieder-für-die-Kinder/ Einzugslieder/|Frieden-Gabenbereitung/Brotbrechen/Kelchkommunion/Auszugslieder|
+
+## Unterscheidung der Gruppen bei JWT-Verarbeitung
+
+Die beiden Gruppen (read-only und admin) können bei der Verarbeitung des ausgegebenen JWTs wie folgt unterschieden werden:
+
+1. **JWT-Dekodierung**: Dekodieren Sie das JWT, um die darin enthaltenen Ansprüche (Claims) zu extrahieren. Dies kann mit einer JWT-Bibliothek in der verwendeten Programmiersprache erfolgen.
+
+2. **Überprüfung der Gruppenansprüche**: Überprüfen Sie die Ansprüche im JWT, um festzustellen, zu welcher Gruppe der Benutzer gehört. In den Ansprüchen sollte ein Attribut enthalten sein, das die Gruppenzugehörigkeit des Benutzers angibt (z. B. `cognito:groups`).
+
+3. **Unterscheidung der Gruppen**: Basierend auf dem Wert des Gruppenattributs können Sie den Benutzer als Mitglied der read-only oder admin Gruppe identifizieren und entsprechende Berechtigungen zuweisen.
+
+Beispiel in pseudocode:
+
+```
+jwt = decode_jwt(token)
+groups = jwt['cognito:groups']
+
+if 'admin' in groups:
+    # Benutzer ist ein Admin
+    grant_admin_permissions()
+elif 'read-only' in groups:
+    # Benutzer ist ein Read-Only-Benutzer
+    grant_read_only_permissions()
+else:
+    # Benutzer gehört keiner bekannten Gruppe an
+    deny_access()
+```
