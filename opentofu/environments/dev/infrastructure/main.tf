@@ -7,10 +7,10 @@ terraform {
     }
   }
 
-  backend "s3" {
-    bucket = "songs-opentofu-state-dev"
-    key    = "dev-infrastructure.tfstate"
-    region = "eu-central-1"
+  backend "kubernetes" {
+    namespace     = "default"
+    secret_suffix = "dev"
+    config_path   = "kubeconfig.yaml"
   }
 }
 
