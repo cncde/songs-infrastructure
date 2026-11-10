@@ -1,10 +1,11 @@
 name: Preview Guide
 
 on:
-  pull_request:
-    types: [opened, reopened]
+  # pull_request:
+  #   types: [opened, reopened]
+  workflow_dispatch:
 
-jobs:
+    jobs:
   post-guide:
     if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
